@@ -3,7 +3,7 @@
 require_once 'config/db.php';
 
 // Fetch buildings from the database
-$sql = "SELECT building_name FROM buildings";
+$sql = "SELECT building_id, building_name FROM buildings";
 $result = $conn->query($sql);
 
 $buildings = [];
@@ -45,7 +45,7 @@ while ($row = $result->fetch_assoc()) {
                 <select class="form-control" id="building" name="building" required>
                     <option value="" disabled selected>Select your building</option>
                     <?php foreach ($buildings as $building): ?>
-                        <option value="<?= htmlspecialchars($building['building_name']) ?>"><?= htmlspecialchars($building['building_name']) ?></option>
+                        <option value="<?= htmlspecialchars($building['building_id']) ?>"><?= htmlspecialchars($building['building_name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>

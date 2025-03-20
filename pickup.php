@@ -15,7 +15,7 @@ if ($conn->connect_error) {
 }
 
 // Fetch building name from users table
-$stmt = $conn->prepare("SELECT building FROM users WHERE user_id = ?");
+$stmt = $conn->prepare("SELECT building_id FROM users WHERE user_id = ?");
 if (!$stmt) {
     die("Prepare failed: " . $conn->error);
 }

@@ -1,5 +1,4 @@
 <?php
-include '../routes_data.php'; // Ensure the path is correct
 
 header('Content-Type: application/json');
 
@@ -11,6 +10,10 @@ if (empty($routes)) {
     echo json_encode([]);
     exit;
 }
+
+// Geocycle Philippines HQ coordinates
+$hqLat = 14.54391234;
+$hqLon = 121.04958012;
 
 function calculateDistance($lat1, $lon1, $lat2, $lon2) {
     $earthRadius = 6371; // Radius of the earth in km
@@ -26,11 +29,32 @@ function calculateDistance($lat1, $lon1, $lat2, $lon2) {
     return $earthRadius * $c; // Distance in km
 }
 
-function tsp($routes) {
+function findNearestWaypoint($routes, $hqLat, $hqLon) {
+    $nearestIndex = -1;
+    $nearestDistance = PHP_INT_MAX;
+
+    foreach ($routes as $index => $waypoint) {
+        $distance = calculateDistance($hqLat, $hqLon, $waypoint['latitude'], $waypoint['longitude']);
+        if ($distance < $nearestDistance) {
+            $nearestDistance = $distance;
+            $nearestIndex = $index;
+        }
+    }
+
+    return $nearestIndex;
+}
+
+function tsp($routes, $hqLat, $hqLon) {
     $n = count($routes);
+    if ($n == 0) return [];
+
+    // Find the nearest waypoint to HQ
+    $startIndex = findNearestWaypoint($routes, $hqLat, $hqLon);
+
+    // Reorder waypoints to start from nearest to HQ
     $visited = array_fill(0, $n, false);
     $routeOrder = [];
-    $currentIndex = 0;
+    $currentIndex = $startIndex;
 
     for ($i = 0; $i < $n; $i++) {
         $visited[$currentIndex] = true;
@@ -62,6 +86,6 @@ function tsp($routes) {
     return $routeOrder;
 }
 
-$optimizedRoutes = tsp($routes);
+$optimizedRoutes = tsp($routes, $hqLat, $hqLon);
 echo json_encode($optimizedRoutes);
 exit;

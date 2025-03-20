@@ -22,7 +22,7 @@ $start_of_week = date('Y-m-d', strtotime('monday this week'));
 $end_of_week = date('Y-m-d', strtotime('sunday this week'));
 
 // Fetch scheduled pickups for this week (for all users)
-$sql = "SELECT created_at, building, latitude, longitude 
+$sql = "SELECT created_at, building_id, latitude, longitude 
         FROM pickuprequests 
         WHERE status = 'pending' 
         AND DATE(created_at) BETWEEN ? AND ?

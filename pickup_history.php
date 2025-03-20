@@ -24,10 +24,12 @@ $result_user = $stmt_user->get_result();
 $user = $result_user->fetch_assoc();
 $full_name = $user['full_name'] ?? 'User';
 
-// Fetch completed pickups
-$sql_completed = "SELECT request_id, status, created_at, building, latitude, longitude 
-                  FROM pickuprequests WHERE user_id = ? AND status = 'completed' 
-                  ORDER BY created_at DESC";
+// Fetch completed pickups with building name
+$sql_completed = "SELECT pr.request_id, pr.status, pr.created_at, pr.building_id, b.building_name, pr.latitude, pr.longitude 
+                  FROM pickuprequests pr 
+                  LEFT JOIN buildings b ON pr.building_id = b.building_id
+                  WHERE pr.user_id = ? AND pr.status = 'completed' 
+                  ORDER BY pr.created_at DESC";
 $stmt_completed = $conn->prepare($sql_completed);
 
 if (!$stmt_completed) {
@@ -38,10 +40,12 @@ $stmt_completed->bind_param("i", $user_id);
 $stmt_completed->execute();
 $result_completed = $stmt_completed->get_result();
 
-// Fetch pending pickups
-$sql_pending = "SELECT request_id, status, created_at, building, latitude, longitude 
-                FROM pickuprequests WHERE user_id = ? AND status = 'pending' 
-                ORDER BY created_at DESC";
+// Fetch pending pickups with building name
+$sql_pending = "SELECT pr.request_id, pr.status, pr.created_at, pr.building_id, b.building_name, pr.latitude, pr.longitude 
+                FROM pickuprequests pr 
+                LEFT JOIN buildings b ON pr.building_id = b.building_id
+                WHERE pr.user_id = ? AND pr.status = 'pending' 
+                ORDER BY pr.created_at DESC";
 $stmt_pending = $conn->prepare($sql_pending);
 
 if (!$stmt_pending) {
@@ -71,7 +75,7 @@ $result_pending = $stmt_pending->get_result();
                         <div class="d-flex justify-content-between">
                             <div>
                                 <strong>📅 Request Date:</strong> <?= htmlspecialchars($pickup['created_at']) ?><br>
-                                <strong>🏢 Building:</strong> <?= htmlspecialchars($pickup['building']) ?><br>
+                                <strong>🏢 Building:</strong> <?= htmlspecialchars($pickup['building_name'] ?? 'Unknown Building') ?><br>
                                 <strong>📍 Location:</strong> 
                                 <?= "Lat: " . htmlspecialchars($pickup['latitude']) . ", Long: " . htmlspecialchars($pickup['longitude']) ?>
                             </div>
@@ -94,7 +98,7 @@ $result_pending = $stmt_pending->get_result();
                         <div class="d-flex justify-content-between">
                             <div>
                                 <strong>📅 Request Date:</strong> <?= htmlspecialchars($pickup['created_at']) ?><br>
-                                <strong>🏢 Building:</strong> <?= htmlspecialchars($pickup['building']) ?><br>
+                                <strong>🏢 Building:</strong> <?= htmlspecialchars($pickup['building_name'] ?? 'Unknown Building') ?><br>
                                 <strong>📍 Location:</strong> 
                                 <?= "Lat: " . htmlspecialchars($pickup['latitude']) . ", Long: " . htmlspecialchars($pickup['longitude']) ?>
                             </div>
