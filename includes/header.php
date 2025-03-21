@@ -9,18 +9,21 @@ $user_role = '';
 $user_id = '';
 $full_name = 'User';
 $points = 0;
+$building_id = null;
+$isFirstResident = false;
 $isLoggedIn = isset($_SESSION['user_id']);
+$showPickupOptions = false; // Controls "Request Pickup" & "Pickup History" visibility
 
 if ($isLoggedIn) {
     $user_id = $_SESSION['user_id'];
 
     // Include database connection if not already included
     if (!isset($conn)) {
-        require_once 'config/db.php';
+        require_once __DIR__ . '/../config/db.php';
     }
 
-    // Fetch user details
-    $sql_user = "SELECT full_name, role, points FROM users WHERE user_id = ?";
+    // Fetch user details including building_id
+    $sql_user = "SELECT full_name, role, points, building_id FROM users WHERE user_id = ?";
     $stmt_user = $conn->prepare($sql_user);
     $stmt_user->bind_param("i", $user_id);
     $stmt_user->execute();
@@ -31,6 +34,23 @@ if ($isLoggedIn) {
         $full_name = htmlspecialchars($user['full_name'] ?? 'User');
         $user_role = $user['role'] ?? '';
         $points = $user['points'] ?? 0;
+        $building_id = $user['building_id'] ?? null;
+    }
+    $stmt_user->close();
+
+    // Check if the user is the first resident in their building
+    if ($building_id !== null) {
+        $stmt = $conn->prepare("SELECT MIN(user_id) FROM users WHERE building_id = ?");
+        $stmt->bind_param("i", $building_id);
+        $stmt->execute();
+        $stmt->bind_result($lowest_user_id);
+        $stmt->fetch();
+        $stmt->close();
+
+        if ($user_id == $lowest_user_id) {
+            $isFirstResident = true;
+            $showPickupOptions = true; // Enable visibility
+        }
     }
 }
 ?>
@@ -125,8 +145,10 @@ if ($isLoggedIn) {
                     <li><a href="pickup_history.php"><i class="bi bi-clock-history"></i> Pickup History</a></li>
                 <?php else: ?>
                     <li><a href="dashboard.php"><i class="bi bi-speedometer"></i> Dashboard</a></li>
-                    <li><a href="pickup.php"><i class="bi bi-truck"></i> Request Pickup</a></li>
-                    <li><a href="pickup_history.php"><i class="bi bi-clock-history"></i> Recent Activities</a></li>
+                    <?php if ($showPickupOptions): ?>
+                        <li><a href="pickup.php"><i class="bi bi-truck"></i> Request Pickup</a></li>
+                        <li><a href="pickup_history.php"><i class="bi bi-clock-history"></i> Recent Activities</a></li>
+                    <?php endif; ?>
                     <li><a href="report_issue.php"><i class="bi bi-exclamation-triangle"></i> Report Issue</a></li>
                     <hr class="bg-light">
                     <li><a href="donations.php"><i class="bi bi-gift"></i> Donate an Item</a></li>
@@ -149,7 +171,6 @@ if ($isLoggedIn) {
         </script>
     <?php endif; ?>
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

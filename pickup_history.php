@@ -10,14 +10,46 @@ require 'config/db.php';
 
 $user_id = $_SESSION['user_id'];
 
+// Get the user's building ID
+$sql_building = "SELECT building_id FROM users WHERE user_id = ?";
+$stmt_building = $conn->prepare($sql_building);
+if (!$stmt_building) {
+    die("SQL Error: " . $conn->error);
+}
+$stmt_building->bind_param("i", $user_id);
+$stmt_building->execute();
+$result_building = $stmt_building->get_result();
+$user_data = $result_building->fetch_assoc();
+
+if (!$user_data || !isset($user_data['building_id'])) {
+    die("Error retrieving building information.");
+}
+
+$building_id = $user_data['building_id'];
+
+// Get the lowest user_id in the building
+$sql_lowest_user = "SELECT MIN(user_id) AS lowest_user FROM users WHERE building_id = ?";
+$stmt_lowest_user = $conn->prepare($sql_lowest_user);
+if (!$stmt_lowest_user) {
+    die("SQL Error: " . $conn->error);
+}
+$stmt_lowest_user->bind_param("i", $building_id);
+$stmt_lowest_user->execute();
+$result_lowest_user = $stmt_lowest_user->get_result();
+$lowest_user = $result_lowest_user->fetch_assoc()['lowest_user'] ?? null;
+
+// Restrict access if the user is not the lowest user in the building
+if ($user_id != $lowest_user) {
+    header("Location: dashboard.php");
+    exit();
+}
+
 // Fetch user details safely
 $sql_user = "SELECT full_name FROM users WHERE user_id = ?";
 $stmt_user = $conn->prepare($sql_user);
-
 if (!$stmt_user) {
     die("SQL Error: " . $conn->error);
 }
-
 $stmt_user->bind_param("i", $user_id);
 $stmt_user->execute();
 $result_user = $stmt_user->get_result();
@@ -31,11 +63,9 @@ $sql_completed = "SELECT pr.request_id, pr.status, pr.created_at, pr.building_id
                   WHERE pr.user_id = ? AND pr.status = 'completed' 
                   ORDER BY pr.created_at DESC";
 $stmt_completed = $conn->prepare($sql_completed);
-
 if (!$stmt_completed) {
     die("SQL Error: " . $conn->error);
 }
-
 $stmt_completed->bind_param("i", $user_id);
 $stmt_completed->execute();
 $result_completed = $stmt_completed->get_result();
@@ -47,11 +77,9 @@ $sql_pending = "SELECT pr.request_id, pr.status, pr.created_at, pr.building_id, 
                 WHERE pr.user_id = ? AND pr.status = 'pending' 
                 ORDER BY pr.created_at DESC";
 $stmt_pending = $conn->prepare($sql_pending);
-
 if (!$stmt_pending) {
     die("SQL Error: " . $conn->error);
 }
-
 $stmt_pending->bind_param("i", $user_id);
 $stmt_pending->execute();
 $result_pending = $stmt_pending->get_result();

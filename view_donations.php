@@ -4,11 +4,19 @@ include 'includes/header.php';
 require 'config/db.php';
 
 // Fetch available donations
+// Fetch available donations
 $sql = "SELECT d.*, u.full_name FROM donations d 
         JOIN users u ON d.user_id = u.user_id 
-        WHERE d.status = 'Available' 
-        ORDER BY d.submitted_at DESC";
+        WHERE d.status = 'available' 
+        ORDER BY d.created_at DESC"; // Use created_at instead of submitted_at
+
 $result = $conn->query($sql);
+
+// Debug: Check if the query failed
+if (!$result) {
+    die("Query failed: " . $conn->error);
+}
+
 ?>
 
 <div class="container mt-5">
@@ -53,7 +61,7 @@ $result = $conn->query($sql);
                             </table>
                         </div>
                     <?php else: ?>
-                        <div class="alert alert-warning">No donations available.</div>
+                        <div class="alert alert-warning">No donations placed.</div>
                     <?php endif; ?>
                 </div>
             </div>

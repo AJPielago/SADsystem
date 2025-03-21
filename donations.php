@@ -22,21 +22,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (!file_exists($target_dir)) {
             mkdir($target_dir, 0777, true);
         }
-        $image = $target_dir . basename($_FILES["image"]["name"]);
-        move_uploaded_file($_FILES["image"]["tmp_name"], $image);
+
+        $image_name = basename($_FILES["image"]["name"]);
+        $image_path = $target_dir . $image_name;
+
+        // Validate file type
+        $allowed_types = ["jpg", "jpeg", "png", "gif"];
+        $file_extension = strtolower(pathinfo($image_path, PATHINFO_EXTENSION));
+
+        if (!in_array($file_extension, $allowed_types)) {
+            die("Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.");
+        }
+
+        if (move_uploaded_file($_FILES["image"]["tmp_name"], $image_path)) {
+            $image = $image_path;
+        } else {
+            die("Error uploading the file.");
+        }
     }
 
     // Insert into database
-    $sql = "INSERT INTO donations (user_id, item_name, description, category, image) VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO donations (user_id, item_name, item_description, category, image, status, created_at) 
+            VALUES (?, ?, ?, ?, ?, 'available', NOW())";
+
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("issss", $user_id, $item_name, $description, $category, $image);
-    
-    if ($stmt->execute()) {
-        header("Location: donations.php?success=Donation submitted successfully!");
-        exit();
-    } else {
-        $error = "Error submitting donation: " . $conn->error;
+    if (!$stmt) {
+        die("Statement preparation failed: " . $conn->error);
     }
+
+    $stmt->bind_param("issss", $user_id, $item_name, $description, $category, $image);
+
+    if (!$stmt->execute()) {
+        die("Error submitting donation: " . $stmt->error);
+    }
+
+    $stmt->close();
+    $conn->close();
+
+    header("Location: donations.php?success=Donation submitted successfully!");
+    exit();
 }
 ?>
 
@@ -50,11 +74,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="card-body">
                     <?php if (isset($_GET['success'])): ?>
                         <div class="alert alert-success"><?= htmlspecialchars($_GET['success']) ?></div>
-                    <?php elseif (isset($error)): ?>
-                        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
                     <?php endif; ?>
 
-                    <form action="donate.php" method="post" enctype="multipart/form-data">
+                    <form action="user/donate.php" method="post" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label class="form-label">Item Name</label>
                             <input type="text" name="item_name" class="form-control" required>

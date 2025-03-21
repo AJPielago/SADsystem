@@ -7,8 +7,10 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once '../config/db.php'; // Include your database connection file
 
-// Fetch the user's building_id from the database
+// Fetch the logged-in user's ID
 $userId = $_SESSION['user_id'];
+
+// Fetch the user's building ID
 $stmt = $conn->prepare("SELECT building_id FROM users WHERE user_id = ?");
 if ($stmt === false) {
     die('Prepare failed: ' . htmlspecialchars($conn->error));
@@ -19,7 +21,24 @@ $stmt->bind_result($building_id);
 $stmt->fetch();
 $stmt->close();
 
-// Get the coordinates of the building from the buildings table
+// Check if the user is the first resident in their building
+$stmt = $conn->prepare("SELECT user_id FROM users WHERE building_id = ? AND role = 'resident' ORDER BY user_id ASC LIMIT 1");
+if ($stmt === false) {
+    die('Prepare failed: ' . htmlspecialchars($conn->error));
+}
+$stmt->bind_param("i", $building_id);
+$stmt->execute();
+$stmt->bind_result($first_resident_id);
+$stmt->fetch();
+$stmt->close();
+
+// If the user is not the first resident, deny access
+if ($userId != $first_resident_id) {
+    header("Location: ../pickup.php?error=Only the first registered resident in this building can request a pickup.");
+    exit();
+}
+
+// Get the building's coordinates
 $stmt = $conn->prepare("SELECT latitude, longitude FROM buildings WHERE building_id = ?");
 if ($stmt === false) {
     die('Prepare failed: ' . htmlspecialchars($conn->error));

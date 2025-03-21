@@ -1,4 +1,3 @@
-<!-- filepath: c:\xamppSAD\htdocs\SADsystem\register.php -->
 <?php
 require_once 'config/db.php';
 
@@ -45,13 +44,34 @@ while ($row = $result->fetch_assoc()) {
                 <select class="form-control" id="building" name="building" required>
                     <option value="" disabled selected>Select your building</option>
                     <?php foreach ($buildings as $building): ?>
-                        <option value="<?= htmlspecialchars($building['building_id']) ?>"><?= htmlspecialchars($building['building_name']) ?></option>
+                        <option value="<?= htmlspecialchars($building['building_id']) ?>" 
+                            data-building-id="<?= $building['building_id'] ?>">
+                            <?= htmlspecialchars($building['building_name']) ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
+
+            <!-- Hidden input for can_request_pickup -->
+            <input type="hidden" id="can_request_pickup" name="can_request_pickup" value="0">
+
             <button type="submit" class="btn btn-primary">Register</button>
         </form>
     </div>
+
+    <script>
+        document.getElementById('building').addEventListener('change', function() {
+            let buildingId = this.value;
+
+            // Send AJAX request to check if any resident in the building has permission
+            fetch('controllers/check_first_resident.php?building_id=' + buildingId)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('can_request_pickup').value = data.is_first ? "1" : "0";
+                });
+        });
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
